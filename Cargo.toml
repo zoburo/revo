@@ -1,0 +1,22 @@
+[package]
+name = "revo"
+version = "0.0.0"
+edition = "2024"
+
+[dependencies]
+anyhow = "1.0.104"
+axum = "0.8.9"
+dotenvy = "0.15.7"
+env_logger = "0.11.11"
+envconfig = "0.11.1"
+log = "0.4.34"
+opentelemetry = "0.32.0"
+opentelemetry-appender-tracing = "0.32.0"
+opentelemetry-otlp = "0.32.0"
+opentelemetry-stdout = "0.32.0"
+opentelemetry_sdk = "0.32.1"
+serde_json = "1.0.151"
+tokio = { version = "1.53.1", features = ["full"] }
+tracing = "0.1.44"
+tracing-opentelemetry = "0.33.0"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
