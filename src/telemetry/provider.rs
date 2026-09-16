@@ -1,7 +1,14 @@
+use anyhow::Result;
+use once_cell::sync::OnceCell;
 use opentelemetry::{KeyValue, global, trace::TracerProvider};
 use opentelemetry_sdk::{Resource, metrics::SdkMeterProvider, trace::SdkTracerProvider};
+use opentelemetry_semantic_conventions::{
+    resource::DEPLOYMENT_ENVIRONMENT_NAME, trace::SERVICE_VERSION,
+};
 use opentelemetry_stdout::{MetricExporter, SpanExporter};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+
+use crate::core::{config, constant};
 
 pub struct TelemetryProvider {
     meter_provider: SdkMeterProvider,
@@ -9,12 +16,16 @@ pub struct TelemetryProvider {
 }
 
 impl TelemetryProvider {
-    pub fn init() -> Self {
+    pub fn init() -> Result<Self> {
+        let service_name = constant::SERVICE_NAME;
+        let service_version = constant::SERVICE_VERSION;
+        let environment: &str = &config().environment;
+
         let resource = Resource::builder()
-            .with_service_name(env!("CARGO_PKG_NAME"))
+            .with_service_name(service_name)
             .with_attributes([
-                KeyValue::new("service.version", env!("CARGO_PKG_VERSION")),
-                KeyValue::new("deployment.environment.name", "development"),
+                KeyValue::new(SERVICE_VERSION, service_version),
+                KeyValue::new(DEPLOYMENT_ENVIRONMENT_NAME, environment),
             ])
             .build();
 
@@ -30,18 +41,17 @@ impl TelemetryProvider {
         global::set_meter_provider(meter_provider.clone());
         global::set_tracer_provider(tracer_provider.clone());
 
-        let tracer = tracer_provider.tracer(env!("CARGO_PKG_NAME"));
+        let tracer = tracer_provider.tracer(service_name);
         let tracing_layer = tracing_opentelemetry::layer().with_tracer(tracer);
 
         tracing_subscriber::registry()
             .with(tracing_layer)
-            .try_init()
-            .ok();
+            .try_init()?;
 
-        Self {
+        Ok(Self {
             meter_provider,
             tracer_provider,
-        }
+        })
     }
 
     pub fn shutdown(&self) {
@@ -53,4 +63,10 @@ impl TelemetryProvider {
             eprintln!("Error shutting down tracer provider: {err:?}");
         }
     }
+}
+
+static TELEMETRY_PROVIDER: OnceCell<TelemetryProvider> = OnceCell::new();
+
+pub fn telemetry_provider() -> Result<&'static TelemetryProvider> {
+    TELEMETRY_PROVIDER.get_or_try_init(TelemetryProvider::init)
 }

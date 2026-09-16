@@ -1,32 +1,23 @@
-use std::sync::OnceLock;
-
 use dotenvy::dotenv;
 
 pub use config::{Config, config};
 
-use crate::telemetry::provider::TelemetryProvider;
+use crate::telemetry::provider::telemetry_provider;
 
 mod config;
-
-static TELEMETRY_PROVIDER: OnceLock<TelemetryProvider> = OnceLock::new();
-
-pub fn telemetry_provider() -> &'static TelemetryProvider {
-    TELEMETRY_PROVIDER.get_or_init(TelemetryProvider::init)
-}
+pub mod constant;
 
 pub fn init() {
     dotenv().ok();
     env_logger::init();
 
-    let _ = config();
-
-    if !config().otel_sdk_disabled {
+    if !config().otel.sdk_disabled {
         let _ = telemetry_provider();
     }
 }
 
 pub fn cleanup() {
-    if !config().otel_sdk_disabled {
-        telemetry_provider().shutdown();
+    if !config().otel.sdk_disabled {
+        telemetry_provider().unwrap().shutdown();
     }
 }

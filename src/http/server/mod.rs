@@ -15,12 +15,12 @@ impl HttpServer {
     }
 
     pub async fn run(&self) -> Result<()> {
-        let address = "0.0.0.0:3000";
+        let address = &config().http.address;
         let listener = TcpListener::bind(address).await?;
         let mut router =
             Router::new().route("/", get(async || Json(json!({"message": "Hello, world!"}))));
 
-        if !config().otel_sdk_disabled {
+        if !config().otel.sdk_disabled {
             router = router.layer(from_fn(telemetry));
         }
 
