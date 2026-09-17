@@ -24,6 +24,34 @@ pub struct Http {
 pub struct Otel {
     #[envconfig(from = "OTEL_SDK_DISABLED", default = "true")]
     pub sdk_disabled: bool,
+
+    /// Instrumentation options for HTTP servers.
+    #[envconfig(nested)]
+    pub http: OtelHttp,
+}
+
+#[derive(Envconfig)]
+pub struct OtelHttp {
+    /// Full replacement of the HTTP methods the instrumentation reports verbatim, comma
+    /// separated and case sensitive. Every other method is reported as `_OTHER`.
+    #[envconfig(from = "OTEL_INSTRUMENTATION_HTTP_KNOWN_METHODS")]
+    pub known_methods: Option<String>,
+
+    /// Captures the opt-in `server.address` and `server.port` metric attributes. They are
+    /// derived from request headers, which clients control, so they are off by default.
+    #[envconfig(
+        from = "OTEL_INSTRUMENTATION_HTTP_SERVER_CAPTURE_SERVER_ATTRIBUTES",
+        default = "false"
+    )]
+    pub capture_server_attributes: bool,
+
+    /// Records the opt-in `http.server.request.body.size` and
+    /// `http.server.response.body.size` metrics.
+    #[envconfig(
+        from = "OTEL_INSTRUMENTATION_HTTP_SERVER_CAPTURE_BODY_SIZE",
+        default = "false"
+    )]
+    pub capture_body_size: bool,
 }
 
 static CONFIG: OnceLock<Config> = OnceLock::new();
